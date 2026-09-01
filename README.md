@@ -487,3 +487,9 @@ path:
 ```
 %LOCALAPPDATA%\Programs\Python\Python312\python.exe figma_diff.py
 ```
+
+---
+
+## License
+
+MIT — free to use, copy, modify and share. See [LICENSE](LICENSE).
