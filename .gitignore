@@ -1,0 +1,21 @@
+# Plugin exports, script snapshots and generated changelogs are local working
+# state. The directories stay in the repo (via .gitkeep) so a fresh clone has
+# somewhere to put things; their contents are never committed.
+variable_exports/*
+!variable_exports/.gitkeep
+snapshots/*
+!snapshots/.gitkeep
+changelogs/*
+!changelogs/.gitkeep
+
+# Your own file keys. Copy files.example.json to files.json to get started.
+files.json
+
+# Never commit a Figma personal access token.
+.env
+
+__pycache__/
+*.py[cod]
+
+.DS_Store
+Thumbs.db

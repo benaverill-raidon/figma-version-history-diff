@@ -1,0 +1,7 @@
+# Normalize line endings: the repo stores LF, and Git converts on checkout.
+* text=auto eol=lf
+
+# Treat these as binary so they are never munged.
+*.png binary
+*.jpg binary
+*.gif binary

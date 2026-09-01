@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: var(--figma-color-bg, #ffffff);
+    --fg: var(--figma-color-text, #1e1e1e);
+    --muted: var(--figma-color-text-secondary, #6b6b6b);
+    --border: var(--figma-color-border, #e6e6e6);
+    --brand: var(--figma-color-bg-brand, #0d99ff);
+    --brand-fg: var(--figma-color-text-onbrand, #ffffff);
+    --danger: var(--figma-color-text-danger, #d13b3b);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 16px;
+    background: var(--bg);
+    color: var(--fg);
+    font: 11px/1.5 Inter, "Helvetica Neue", -apple-system, system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+  h1 { font-size: 12px; font-weight: 600; margin: 0 0 2px; }
+  .file { color: var(--muted); margin-bottom: 14px; word-break: break-word; }
+  .count {
+    font-size: 34px;
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+  .count-label { color: var(--muted); margin-bottom: 12px; }
+  .collections {
+    flex: 1;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-bottom: 12px;
+    min-height: 60px;
+  }
+  .collections div {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 3px 0;
+  }
+  .collections span:last-child { color: var(--muted); white-space: nowrap; }
+  .empty { color: var(--muted); }
+  .row { display: flex; gap: 8px; }
+  button {
+    font: inherit;
+    font-weight: 500;
+    border-radius: 6px;
+    padding: 8px 12px;
+    cursor: pointer;
+    border: 1px solid transparent;
+  }
+  button:disabled { opacity: 0.45; cursor: default; }
+  .primary { flex: 1; background: var(--brand); color: var(--brand-fg); }
+  .secondary {
+    background: transparent;
+    color: var(--fg);
+    border-color: var(--border);
+  }
+  .hint { color: var(--muted); margin-top: 10px; }
+  .hint code {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 10px;
+  }
+  .error { color: var(--danger); }
+</style>
+</head>
+<body>
+  <h1>Variable Exporter</h1>
+  <div class="file" id="file">Reading variables&hellip;</div>
+
+  <div class="count" id="count">&mdash;</div>
+  <div class="count-label" id="countLabel">local variables</div>
+
+  <div class="collections" id="collections">
+    <span class="empty">Loading&hellip;</span>
+  </div>
+
+  <div class="row">
+    <button class="primary" id="download" disabled>Download JSON</button>
+    <button class="secondary" id="refresh">Refresh</button>
+  </div>
+
+  <div class="hint" id="hint">
+    Saves as <code id="filename">&hellip;</code>
+  </div>
+
+<script>
+  var state = { payload: null };
+
+  var els = {
+    file: document.getElementById('file'),
+    count: document.getElementById('count'),
+    countLabel: document.getElementById('countLabel'),
+    collections: document.getElementById('collections'),
+    download: document.getElementById('download'),
+    refresh: document.getElementById('refresh'),
+    hint: document.getElementById('hint'),
+    filename: document.getElementById('filename')
+  };
+
+  function render(payload) {
+    state.payload = payload;
+
+    var variables = payload.variables || [];
+    var collections = payload.collections || [];
+
+    els.file.textContent = payload.fileName;
+    els.count.textContent = String(variables.length);
+    els.countLabel.textContent =
+      variables.length === 1 ? 'local variable' : 'local variables';
+
+    els.collections.innerHTML = '';
+    if (!collections.length) {
+      var empty = document.createElement('span');
+      empty.className = 'empty';
+      empty.textContent = 'No local variable collections in this file.';
+      els.collections.appendChild(empty);
+    } else {
+      collections.forEach(function (collection) {
+        var row = document.createElement('div');
+        var name = document.createElement('span');
+        name.textContent = collection.name;
+        var meta = document.createElement('span');
+        meta.textContent = (collection.variableIds || []).length + ' vars / ' +
+          (collection.modes || []).length + ' modes';
+        row.appendChild(name);
+        row.appendChild(meta);
+        els.collections.appendChild(row);
+      });
+    }
+
+    els.filename.textContent = payload.suggestedFilename;
+    els.download.disabled = variables.length === 0;
+  }
+
+  function download() {
+    if (!state.payload) return;
+
+    // Figma plugins are sandboxed and cannot write to disk directly, so the
+    // best available path is a normal browser download. That is why the
+    // rename-and-move step in the README exists.
+    var blob = new Blob(
+      [JSON.stringify(state.payload, null, 2)],
+      { type: 'application/json' }
+    );
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement('a');
+    link.href = url;
+    link.download = state.payload.suggestedFilename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+
+    parent.postMessage({
+      pluginMessage: {
+        type: 'downloaded',
+        count: (state.payload.variables || []).length
+      }
+    }, '*');
+  }
+
+  els.download.addEventListener('click', download);
+
+  els.refresh.addEventListener('click', function () {
+    els.download.disabled = true;
+    els.collections.innerHTML = '<span class="empty">Loading&hellip;</span>';
+    parent.postMessage({ pluginMessage: { type: 'refresh' } }, '*');
+  });
+
+  onmessage = function (event) {
+    var message = event.data && event.data.pluginMessage;
+    if (!message) return;
+
+    if (message.type === 'export-data') {
+      render(message.payload);
+    } else if (message.type === 'export-error') {
+      els.file.textContent = 'Could not read variables';
+      els.count.textContent = '!';
+      els.collections.innerHTML = '';
+      els.hint.className = 'hint error';
+      els.hint.textContent = message.message;
+      els.download.disabled = true;
+    }
+  };
+</script>
+</body>
+</html>

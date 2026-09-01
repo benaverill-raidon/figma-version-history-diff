@@ -1,0 +1,13 @@
+{
+  "name": "Variable Exporter",
+  "id": "figma-variable-exporter",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": ["none"],
+    "reasoning": "Reads local variables and hands them to the UI for a local file download. Nothing leaves the machine."
+  }
+}

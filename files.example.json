@@ -1,0 +1,18 @@
+{
+  "tokens": {
+    "key": "PASTE_YOUR_FIGMA_FILE_KEY_HERE",
+    "label": "Design Tokens"
+  },
+  "components": {
+    "key": "PASTE_YOUR_FIGMA_FILE_KEY_HERE",
+    "label": "Components",
+    "node_types": [
+      "COMPONENT_SET",
+      "COMPONENT"
+    ],
+    "status_markers": {
+      "WIP": "in progress in Figma",
+      "DONE": "done in Figma"
+    }
+  }
+}
